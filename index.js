@@ -25,21 +25,16 @@ try {
   process.exit(1);
 }
 
-// Conexión a MySQL usando la URL parseada
-const db = mysql.createConnection({
+// ✅ Pool de conexiones para evitar desconexiones
+const db = mysql.createPool({
   host: dbUrl.hostname,
   port: dbUrl.port || 3306,
   user: dbUrl.username,
   password: dbUrl.password,
   database: dbUrl.pathname.replace('/', ''),
-});
-
-db.connect(error => {
-  if (error) {
-    console.error('❌ Error conectando a la base de datos:', error);
-  } else {
-    console.log('✅ Conectado a la base de datos MySQL');
-  }
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 // RUTA: Obtener productos
@@ -47,10 +42,9 @@ app.get('/productos', (req, res) => {
   db.query('SELECT * FROM productos', (err, results) => {
     if (err) {
       console.error('Error al obtener productos:', err);
-      res.status(500).send('Error al obtener productos');
-    } else {
-      res.json(results);
+      return res.status(500).send('Error al obtener productos');
     }
+    res.json(results);
   });
 });
 
