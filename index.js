@@ -7,7 +7,12 @@ const { URL } = require('url');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-app.use(cors());
+// 💡 CORS: Permitir acceso desde cualquier origen (incluyendo Vercel)
+app.use(cors({
+  origin: '*', // Si quieres, puedes poner tu dominio exacto: 'https://dilamarket-ftgv.vercel.app'
+  methods: ['GET', 'POST'],
+}));
+
 app.use(express.json());
 
 // Verificar si DATABASE_URL existe
