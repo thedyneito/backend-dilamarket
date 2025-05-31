@@ -1,22 +1,37 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
-const dotenv = require('dotenv');
-const app = express();
-const PORT = process.env.PORT || 5000;
+const { URL } = require('url');
 
-dotenv.config();
+const app = express();
+const PORT = process.env.PORT || 8080;
+
 app.use(cors());
 app.use(express.json());
 
-// Extraer datos desde DATABASE_URL
-const url = new URL(process.env.DATABASE_URL);
+// Verificar si DATABASE_URL existe
+if (!process.env.DATABASE_URL) {
+  console.error('❌ ERROR: DATABASE_URL no está definida en el archivo .env');
+  process.exit(1);
+}
+
+// Parsear DATABASE_URL de Railway
+let dbUrl;
+try {
+  dbUrl = new URL(process.env.DATABASE_URL);
+} catch (error) {
+  console.error('❌ URL inválida en DATABASE_URL:', error.message);
+  process.exit(1);
+}
+
+// Conexión a MySQL usando la URL parseada
 const db = mysql.createConnection({
-  host: url.hostname,
-  user: url.username,
-  password: url.password,
-  database: url.pathname.replace('/', ''),
-  port: url.port
+  host: dbUrl.hostname,
+  port: dbUrl.port || 3306,
+  user: dbUrl.username,
+  password: dbUrl.password,
+  database: dbUrl.pathname.replace('/', ''),
 });
 
 db.connect(error => {
@@ -27,6 +42,7 @@ db.connect(error => {
   }
 });
 
+// RUTA: Obtener productos
 app.get('/productos', (req, res) => {
   db.query('SELECT * FROM productos', (err, results) => {
     if (err) {
@@ -38,6 +54,7 @@ app.get('/productos', (req, res) => {
   });
 });
 
+// RUTA: Finalizar compra
 app.post('/finalizar-compra', (req, res) => {
   const { carrito, usuario_id } = req.body;
 
@@ -100,6 +117,12 @@ app.post('/finalizar-compra', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+// RUTA: Estado del backend
+app.get('/', (req, res) => {
+  res.send('✅ Backend Dilamarket funcionando');
+});
+
+// INICIAR SERVIDOR
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
 });
