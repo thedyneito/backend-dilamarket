@@ -1,18 +1,22 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
+const dotenv = require('dotenv');
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
+dotenv.config();
 app.use(cors());
 app.use(express.json());
 
-// Conexión a la base de datos
+// Extraer datos desde DATABASE_URL
+const url = new URL(process.env.DATABASE_URL);
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'tienda'
+  host: url.hostname,
+  user: url.username,
+  password: url.password,
+  database: url.pathname.replace('/', ''),
+  port: url.port
 });
 
 db.connect(error => {
@@ -23,7 +27,6 @@ db.connect(error => {
   }
 });
 
-// Obtener productos
 app.get('/productos', (req, res) => {
   db.query('SELECT * FROM productos', (err, results) => {
     if (err) {
@@ -35,7 +38,6 @@ app.get('/productos', (req, res) => {
   });
 });
 
-// Finalizar compra con creación de factura
 app.post('/finalizar-compra', (req, res) => {
   const { carrito, usuario_id } = req.body;
 
@@ -68,7 +70,6 @@ app.post('/finalizar-compra', (req, res) => {
           return res.status(500).json({ error: 'Error al registrar detalles de la compra' });
         }
 
-        // Crear un pedido para la factura (usamos el primer producto del carrito como ejemplo)
         db.query(
           'INSERT INTO pedidos (producto_id, cantidad, total) VALUES (?, ?, ?)',
           [carrito[0].id, carrito[0].cantidad, carrito[0].precio * carrito[0].cantidad],
