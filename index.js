@@ -7,30 +7,40 @@ const { URL } = require('url');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// 💡 CORS: Permitir acceso desde cualquier origen (incluyendo Vercel)
+// ✅ Permitir solo dominios seguros como localhost y Vercel
+const allowedOrigins = [
+  'https://dilamarket-ftgv.vercel.app',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: '*', // Si quieres, puedes poner tu dominio exacto: 'https://dilamarket-ftgv.vercel.app'
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('No permitido por CORS'));
+    }
+  },
   methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
 
-// Verificar si DATABASE_URL existe
+// Verificación y conexión a MySQL
 if (!process.env.DATABASE_URL) {
-  console.error('❌ ERROR: DATABASE_URL no está definida en el archivo .env');
+  console.error('❌ ERROR: DATABASE_URL no está definida');
   process.exit(1);
 }
 
-// Parsear DATABASE_URL
 let dbUrl;
 try {
   dbUrl = new URL(process.env.DATABASE_URL);
 } catch (error) {
-  console.error('❌ URL inválida en DATABASE_URL:', error.message);
+  console.error('❌ URL inválida:', error.message);
   process.exit(1);
 }
 
-// Crear pool de conexiones
 const pool = mysql.createPool({
   host: dbUrl.hostname,
   port: dbUrl.port || 3306,
@@ -42,12 +52,11 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Ruta de prueba
+// Endpoints
 app.get('/', (req, res) => {
   res.send('✅ Backend Dilamarket funcionando');
 });
 
-// Ruta para obtener productos
 app.get('/productos', (req, res) => {
   pool.query('SELECT * FROM productos', (err, results) => {
     if (err) {
