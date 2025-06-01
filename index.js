@@ -7,20 +7,12 @@ const { URL } = require('url');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// ✅ Permitir solo dominios seguros como localhost y Vercel
-const allowedOrigins = [
-  'https://dilamarket-ftgv.vercel.app',
-  'http://localhost:3000'
-];
-
+// ✅ Permitir acceso explícito a Vercel y localhost
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('No permitido por CORS'));
-    }
-  },
+  origin: [
+    'https://dilamarket-ftgv.vercel.app',
+    'http://localhost:3000'
+  ],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
